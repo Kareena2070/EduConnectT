@@ -15,12 +15,30 @@ connectDB();
 const app = express();
 
 // Middleware
+// CORS configuration: allow localhost during development and the deployed frontend in production.
+// Read allowed frontend origin from env so you can set it in Vercel (FRONTEND_URL).
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      // origin is undefined for same-origin requests or some server-side tools — allow those
+      if (!origin) return callback(null, true);
+
+      const allowed = [FRONTEND_URL, "https://edu-connect-f.vercel.app"];
+      if (allowed.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Ensure preflight (OPTIONS) requests receive the CORS headers
+app.options("*", cors());
 app.use(express.json());
 
 // Serve uploaded files
